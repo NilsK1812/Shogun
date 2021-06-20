@@ -1,4 +1,6 @@
 from tkinter import *
+import tkinter.messagebox
+import random as r
 
 class MyApp(Frame):
     def __init__(self, master):
@@ -6,101 +8,118 @@ class MyApp(Frame):
         #self.pack(fill=BOTH, expand=True)
         master.geometry("800x800")
         #frame to hold the playing field
-        '''
         self.f1 = Frame(master=master)
         self.f1.pack(fill=BOTH, expand=True)
-        '''
-        self.f2 = Canvas(master=master)
-        self.f2.pack(fill=BOTH, expand=True)
 
+        #frame to hold additional buttons (restart and quit)
+        self.f2 = Frame(master=master)
+        self.f2.pack()
+        restart = Button(master=self.f2, text="exit", command=self.quit)
+        restart.pack(side="left")
+
+        #parameter fuer die grid groesse
         self.grid_length = 8
-        
-        #Variabeln um Feld zu erstellen
-        self.count = 1
-        self.x0 = 0
-        self.y0 = 0
-        self.x1 = 100
-        self.y1 = 100
-        self.farbe = 'black'
+        self.row = 0
+        self.knoepfe = []
+        self.knoepfe_farbe =  []
+        self.create_buttons()
 
-        self.black_first()
-        self.grey_first()
-        self.black_first()
-        self.grey_first()
-        self.black_first()
-        self.grey_first()
-        self.black_first()
-        self.grey_first()
-
-        '''
+        #make the grid layout expand 
         for x in range(self.grid_length):
             self.f1.columnconfigure(x, weight = 1) 
             self.f1.rowconfigure(x, weight = 1)
-        '''
+        
 
-    def Feld(self,x0, y0, x1, y1, farbe):
-        self.f2.create_rectangle(x0, y0, x1, y1, fill=farbe)
+    def create_buttons(self):
+        self.black_first()
+        self.grey_first()
+        self.black_first()
+        self.grey_first()
+        self.black_first()
+        self.grey_first()
+        self.black_first()
+        self.grey_first()
+        
+
+    def clicked(self, event):
+        print("Es geht!")
+        if(event.widget["highlightbackground"] == '#565656' or event.widget["highlightbackground"] == '#000000'):
+            tkinter.messagebox.showwarning("Warning","Auf dem Feld ist keine Figur")
+        
+        else:
+            grid_info = event.widget.grid_info()
+            print("{}/{}".format(grid_info["column"],grid_info["row"]))
 
     def black_first(self):
-        while(1):
-            if(self.count == 10):
-                self.count = 1
-                self.x0 = 0
-                self.y0 = self.y0 + 100
-                self.x1 = self.x1 + 100
-                self.y1 = self.y1 + 100
-                self.farbe = 'grey'
-                print("geht")
-                break
-            if(self.count % 2):
-                self.Feld(self.x0, self.y0, self.x1, self.y1, self.farbe)
-                self.x0 = self.x0 + 100
-                self.x1 = self.x1 + 100
-                self.farbe = 'grey'
-                self.count = self.count + 1
+        count = 0
+        random_zahl = 0
+        for x in range(self.grid_length):
+            b = Button(master=self.f1)
+            
+            if(self.row == 0):
+                r.seed()
+                b["highlightbackground"] = 'red'
+                if(count == 4):
+                    random_zahl = r.randint(1,2)
+                    b["text"] = random_zahl
+                else:
+                    random_zahl = r.randint(1,4)
+                    b["text"] = random_zahl
+                count = count + 1 
+            
+            elif(count % 2):
+                b["highlightbackground"] = '#565656'
+                count = count + 1 
             else:
-                self.Feld(self.x0, self.y0, self.x1, self.y1, self.farbe)
-                self.x0 = self.x0 + 100
-                self.x1 = self.x1 + 100
-                self.farbe = 'black'
-                self.count = self.count + 1
+                 b["highlightbackground"] = '#000000'
+                 count = count + 1 
+
+            b.bind("<ButtonPress-1>", self.clicked)
+            b.grid(row=self.row, column=x, sticky=N+S+E+W)
+
+            if(count == 8):
+                count = 0
+                self.row = self.row + 1
+
+            self.knoepfe.append(b)
     
     def grey_first(self):
-        while(1):
-            if(self.count == 10):
-                self.count = 1
-                self.x0 = 0
-                self.y0 = self.y0 + 100
-                self.x1 = self.x1 + 100
-                self.y1 = self.y1 + 100
-                break
-            if(self.count % 2):
-                self.Feld(self.x0, self.y0, self.x1, self.y1, self.farbe)
-                self.x0 = self.x0 + 100
-                self.x1 = self.x1 + 100
-                self.farbe = 'black'
-                self.count = self.count + 1
-            else:
-                self.Feld(self.x0, self.y0, self.x1, self.y1, self.farbe)
-                self.x0 = self.x0 + 100
-                self.x1 = self.x1 + 100
-                self.farbe = 'grey'
-                self.count = self.count + 1
-
-    '''
-    def board(self):
-        
+        count = 0
+        random_zahl = 0
         for x in range(self.grid_length):
-            for y in range(self.grid_length):
-                b = Button(master=self.f1)
-                b.bind("<ButtonPress-1>", self.clicked)
-                b.grid(row=y, column=x,sticky=N+S+E+W)
+            b = Button(master=self.f1)
+            
+            if(self.row == 7):
+                r.seed()
+                b["highlightbackground"] = 'white'
+                if(count == 4):
+                    random_zahl = r.randint(1,2)
+                    b["text"] = random_zahl
+                else:
+                    random_zahl = r.randint(1,4)
+                    b["text"] = random_zahl
+                count = count + 1 
 
-    def clicked(self,event):
-        print("Klick")
-    '''
+            elif(count % 2):
+                b["highlightbackground"] = '#000000'
+                count = count + 1 
+
+            else:
+                 b["highlightbackground"] = '#565656'
+                 count = count + 1 
+
+            
+            b.grid(row=self.row, column=x, sticky=N+S+E+W)
+
+            if(count == 8):
+                count = 0
+                self.row = self.row + 1
+
+            self.knoepfe.append(b)
+            self.knoepfe_farbe.append(b["highlightbackground"])
+
 
 tk_window = Tk()
-tk_window.title('Shongu')
+tk_window.title("Shongun")
 app = MyApp(tk_window)
 app.mainloop()

@@ -87,6 +87,11 @@ class MyApp(Frame):
             tkinter.messagebox.showwarning("Warning","Du kannst dich nicht selber schmeißen")
 
         elif(self.farbe != ''):
+            grid_info = event.widget.grid_info()
+            self.x_Achse2 = grid_info["column"]
+            self.y_Achse2 = grid_info["row"]
+            print("x-Achse: {}; Y-Achse: {}".format(self.x_Achse2, self.y_Achse2))
+            self.spielzug_checker()
             self.event1["highlightbackground"] = self.aktuelle_farbe
             self.event1["text"] = ''
             event.widget["highlightbackground"] = self.farbe
@@ -100,12 +105,12 @@ class MyApp(Frame):
             self.event1 = ''
             self.aktuelle_farbe = ''
             self.farbe = ''
-        
+            
         else:
             grid_info = event.widget.grid_info()
             print("{}/{}".format(grid_info["column"],grid_info["row"]))
-            self.x_Achse = grid_info["row"]
-            self.y_Achse = grid_info["column"]
+            self.x_Achse = grid_info["column"]
+            self.y_Achse = grid_info["row"]
             if(self.aktueller_player == 1):
                 if(event.widget["highlightbackground"] == "snow"):
                     self.black_grey_checker()
@@ -224,6 +229,8 @@ class MyApp(Frame):
                 else:
                     self.aktuelle_farbe = '#565656'
 
+    def spielzug_checker(self):
+        print("Hi")
 
 tk_window = Tk()
 tk_window.title("Shmong-Shmong")

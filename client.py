@@ -8,8 +8,8 @@ import random as r
 recive_var = ''
 player = 0
 zahlen = []
-event1 = ''
-event2 = ''
+data_rec1 = ''
+data_rec2 = ''
 
 HOST = '127.0.0.1' 
 PORT = 61111      
@@ -41,8 +41,7 @@ class MyApp(Frame):
         self.grid_length = 8
         self.row = 0
         self.Spieler = 0
-        #self.knoepfe = []
-        #self.knoepfe_farbe = []
+        self.knoepfe = []
         self.augenzahlen = []
         self.count_augenzahlen = 0
         self.farbe = ''
@@ -58,11 +57,16 @@ class MyApp(Frame):
         self.y_Achse2 = 0
         #Check Variable
         self.first_round = 0
-        if((player == 1) or (player == 2)):
+        #Kordinaten die versendet werden
+        self.first_klick = 0
+        self.second_klick = 0
+        if(player == 1):
             self.create_buttons()
 
-        elif((player == 2) and (self.first_round == 0)):
-            self.send()
+        elif((player == 2)):
+            self.create_buttons()
+            self.refresh_buttons()
+
 
         #make the grid layout expand 
         for x in range(self.grid_length):
@@ -167,7 +171,6 @@ class MyApp(Frame):
                         b["text"] = random_zahl
                     count = count + 1
                     self.count_augenzahlen = self.count_augenzahlen + 1
-                    print(self.count_augenzahlen)
             
             elif(count % 2):
                 b["highlightbackground"] = '#565656'
@@ -185,7 +188,9 @@ class MyApp(Frame):
 
             if(random_zahl > 0):
                 self.augenzahlen.append(random_zahl)
-    
+            
+            self.knoepfe.append(b)
+
     def grey_first(self):
         count = 0
         random_zahl = 0
@@ -234,6 +239,8 @@ class MyApp(Frame):
 
             if(random_zahl > 0):
                 self.augenzahlen.append(random_zahl)
+
+            self.knoepfe.append(b)
     
     def black_grey_checker(self):
         print("x-Achse: {}; Y-Achse: {}".format(self.x_Achse, self.y_Achse))
@@ -259,20 +266,63 @@ class MyApp(Frame):
 
             s.sendall(data.encode())
 
+            sleep(0.5)
+
             zahlen = pickle.dumps(self.augenzahlen)
 
             s.sendall(zahlen)
 
-            sleep(1)
+            self.x_y_Achse_rechner()
+            
+            print(self.first_klick)
+            print(self.second_klick)
 
-            data = self.event1
+            data = str(self.first_klick)
+
+            s.sendall(data.encode())
+
+            sleep(1)
+            
+            data = str(self.second_klick)
 
             s.sendall(data.encode())
 
             self.first_round = 1
 
-                
+    def x_y_Achse_rechner(self):
+        
+        self.x_Achse = self.x_Achse + 1
+        self.x_Achse2 = self.x_Achse2 + 1
+        self.y_Achse = self.y_Achse + 1
+        self.y_Achse2 = self.y_Achse2 + 1
+        
+        print("x-Achse")
+        print(self.x_Achse)
+        print(self.x_Achse2)
+        print("Y-Achse")
+        print(self.y_Achse)
+        print(self.y_Achse2)
+        print("Länge der Liste")
+        print(len(self.knoepfe))
 
+        for x in range(self.x_Achse):
+            for y in range(self.y_Achse):
+                self.first_klick = self.first_klick + 1
+        
+        for x in range(self.x_Achse2):
+            for y in range(self.y_Achse2):
+                self.second_klick = self.second_klick + 1
+        
+        self.first_klick = self.first_klick - 1
+        self.second_klick = self.second_klick - 1
+
+    def refresh_buttons(self):
+        first = self.knoepfe(data_rec1)
+        second = self.knoepfe(data_rec2)
+
+        
+                
+            
 #Client empfaengt alle Daten die der Server schickt
 def recive():
     global recive_var
@@ -320,12 +370,25 @@ else:
             print(rot)
 
             zahlen = pickle.loads(rot)
+            
+            sleep(1)
+
+            data = s.recv(1024)
+            
+            data = data.decode()
+
+            data_rec1 = int(data)
 
             sleep(1)
 
             data = s.recv(1024)
+            
+            data = data.decode()
 
-            event1 = data.decode()
+            data_rec2 = int(data)
+                    
+            print(data_rec1)
+            print(data_rec2)
 
             break
 

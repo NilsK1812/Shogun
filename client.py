@@ -4,12 +4,13 @@ import pickle
 from tkinter import *
 import tkinter.messagebox
 import random as r
+import threading
 
 recive_var = ''
 player = 0
 zahlen = []
-data_rec1 = ''
-data_rec2 = ''
+data_rec = []
+destroy = 0
 
 HOST = '127.0.0.1' 
 PORT = 61111      
@@ -31,12 +32,13 @@ class MyApp(Frame):
         self.f1 = Frame(master=master)
         self.f1.pack(fill=BOTH, expand=True)
 
-        #frame to hold additional buttons (restart and quit)
+        #frame to hold additional buttons (quit)
+        '''
         self.f2 = Frame(master=master)
         self.f2.pack()
-        restart = Button(master=self.f2, text="exit", command=self.quit)
+        restart = Button(master=self.f2, text="Fertig", command=quit)
         restart.pack(side="left")
-
+        '''
         #parameter fuer die grid groesse
         self.grid_length = 8
         self.row = 0
@@ -60,19 +62,22 @@ class MyApp(Frame):
         #Kordinaten die versendet werden
         self.first_klick = 0
         self.second_klick = 0
+        #Liste mit den Daten die versendet werden
+        self.Daten_senden = []
+        
         if(player == 1):
             self.create_buttons()
 
         elif((player == 2)):
+            self.first_round = 1
             self.create_buttons()
             self.refresh_buttons()
-
 
         #make the grid layout expand 
         for x in range(self.grid_length):
             self.f1.columnconfigure(x, weight = 1) 
             self.f1.rowconfigure(x, weight = 1)
-    
+
     def create_buttons(self):
         self.black_first()
         self.grey_first()
@@ -85,13 +90,13 @@ class MyApp(Frame):
         self.grey_first()
     
     def clicked(self, event):
-        print("Es geht!")
-        print(self.augenzahlen)
-
         if((event.widget["highlightbackground"] == "#565656" or event.widget["highlightbackground"] == "#000000") and self.farbe == ''):
             tkinter.messagebox.showwarning("Warning","Auf dem Feld ist keine Figur")
 
-        elif((self.farbe == 'red' or self.farbe == 'snow') and (event.widget["highlightbackground"] == "red" or event.widget["highlightbackground"] == 'snow')):
+        elif((self.farbe == 'red') and (event.widget["highlightbackground"] == "red")):
+            tkinter.messagebox.showwarning("Warning","Du kannst dich nicht selber schmeißen")
+        
+        elif((self.farbe == 'snow') and (event.widget["highlightbackground"] == "snow")):
             tkinter.messagebox.showwarning("Warning","Du kannst dich nicht selber schmeißen")
 
         elif(self.farbe != ''):
@@ -99,10 +104,10 @@ class MyApp(Frame):
             self.x_Achse2 = grid_info["column"]
             self.y_Achse2 = grid_info["row"]
             self.event2 = event.widget
-            print("x-Achse: {}; Y-Achse: {}".format(self.x_Achse2, self.y_Achse2))
             self.event1["highlightbackground"] = self.aktuelle_farbe
             self.event1["text"] = ''
             self.event2["highlightbackground"] = self.farbe
+            print("1")
             if(self.event1["fg"] == '#ffd700'):
                 random_zahl = r.randint(1,2)
                 self.event2["text"] = random_zahl
@@ -114,20 +119,23 @@ class MyApp(Frame):
             self.event1 = ''
             self.event2 = ''
             self.aktuelle_farbe = ''
+            self.aktueller_player = 3
             self.farbe = ''
-        
+            recive_thread = threading.Thread(target = self.recive)
+            recive_thread.start()
+
+        elif(self.aktueller_player == 3):
+            tkinter.messagebox.showinfo("Info","Bitte warte bis dein Gegner mit dem Zug fertig ist!")
+
         else:
             grid_info = event.widget.grid_info()
-            print("{}/{}".format(grid_info["column"],grid_info["row"]))
             self.x_Achse = grid_info["row"]
             self.y_Achse = grid_info["column"]
             if(self.aktueller_player == 1):
                 if(event.widget["highlightbackground"] == "snow"):
                     self.black_grey_checker()
                     self.farbe = event.widget["highlightbackground"]
-                    print(self.farbe)
-                    self.event1 = event.widget 
-                    print(self.event1) 
+                    self.event1 = event.widget  
                     self.aktueller_player = 2
                 else:
                     tkinter.messagebox.showwarning("Spieler1","Du bist weiß und nicht rot :)")
@@ -135,12 +143,10 @@ class MyApp(Frame):
                 if(event.widget["highlightbackground"] == "red"):
                     self.black_grey_checker()
                     self.farbe = event.widget["highlightbackground"]
-                    print(self.farbe)
                     self.event1 = event.widget
                     self.aktueller_player = 1
                 else:
                     tkinter.messagebox.showwarning("Spieler2","Du bist rot und nicht weiß :)")
-
 
     def black_first(self):
         count = 0
@@ -243,7 +249,6 @@ class MyApp(Frame):
             self.knoepfe.append(b)
     
     def black_grey_checker(self):
-        print("x-Achse: {}; Y-Achse: {}".format(self.x_Achse, self.y_Achse))
         if(self.x_Achse % 2):
             if(self.y_Achse % 2):
                 self.aktuelle_farbe = '#000000'
@@ -260,9 +265,10 @@ class MyApp(Frame):
     
     def send(self):
         if(self.first_round == 0):
-            data = "jetzt"
+            
+            print("send")
 
-            print(data)
+            data = "jetzt"
 
             s.sendall(data.encode())
 
@@ -271,77 +277,110 @@ class MyApp(Frame):
             zahlen = pickle.dumps(self.augenzahlen)
 
             s.sendall(zahlen)
+                
+            self.x_y_Achse_rechner()
+
+            changes = pickle.dumps(self.Daten_senden)
+
+            s.sendall(changes)
+                
+            self.first_round = 1
+        
+        else:
+            
+            print("send")
 
             self.x_y_Achse_rechner()
-            
-            print(self.first_klick)
-            print(self.second_klick)
 
-            data = str(self.first_klick)
+            changes = pickle.dumps(self.Daten_senden)
 
-            s.sendall(data.encode())
+            s.sendall(changes)
 
-            sleep(1)
-            
-            data = str(self.second_klick)
-
-            s.sendall(data.encode())
-
-            self.first_round = 1
 
     def x_y_Achse_rechner(self):
         
-        self.x_Achse = self.x_Achse + 1
-        self.x_Achse2 = self.x_Achse2 + 1
-        self.y_Achse = self.y_Achse + 1
-        self.y_Achse2 = self.y_Achse2 + 1
+        for i in range(len(self.knoepfe)):
+            x = self.knoepfe[i]
+            if(x == self.event1):
+                self.first_klick = i
+                break
         
-        print("x-Achse")
-        print(self.x_Achse)
-        print(self.x_Achse2)
-        print("Y-Achse")
-        print(self.y_Achse)
-        print(self.y_Achse2)
-        print("Länge der Liste")
-        print(len(self.knoepfe))
+        for i in range(len(self.knoepfe)):
+            x = self.knoepfe[i]
+            if(x == self.event2):
+                self.second_klick = i
+                break
 
-        for x in range(self.x_Achse):
-            for y in range(self.y_Achse):
-                self.first_klick = self.first_klick + 1
-        
-        for x in range(self.x_Achse2):
-            for y in range(self.y_Achse2):
-                self.second_klick = self.second_klick + 1
-        
-        self.first_klick = self.first_klick - 1
-        self.second_klick = self.second_klick - 1
+        self.Daten_senden.append(self.first_klick)
+        self.Daten_senden.append(self.aktuelle_farbe)
+        self.Daten_senden.append(self.second_klick)
+        self.Daten_senden.append(self.event2["highlightbackground"])
+        self.Daten_senden.append(self.event2["text"])
+        self.Daten_senden.append(self.event2["fg"])
+        self.Daten_senden.append(self.aktueller_player)
+
+        print(self.Daten_senden)
+
 
     def refresh_buttons(self):
-        first = self.knoepfe(data_rec1)
-        second = self.knoepfe(data_rec2)
+        self.knoepfe[data_rec[0]].configure(highlightbackground = data_rec[1])
+        self.knoepfe[data_rec[0]].configure(text = '')
+        self.knoepfe[data_rec[2]].configure(highlightbackground = data_rec[3])
+        self.knoepfe[data_rec[2]].configure(text = data_rec[4])
+        self.knoepfe[data_rec[2]].configure(fg = data_rec[5])
+        self.aktueller_player = data_rec[6]    
 
-        
+
+    def recive(self):
+        global data_rec
+
+        data_rec = []
+
+        print(data_rec)
+
+        self.Daten_senden = []
+
+        try:
+            while(1):
+                print("thread")
+                '''
+                data = s.recv(1024)
+                data = data.decode()
                 
-            
+                if(data == "jetzt"):
+                '''
+                data = s.recv(1024)
+
+                data_rec = pickle.loads(data) 
+
+                break
+        
+        except:
+            print("Threads koennen in Python nicht beendent werden, deswegen wird die Fehlermeldung abgefangen, damit es uebersichtlicher Aussieht")
+        
+        self.refresh_buttons()
+
 #Client empfaengt alle Daten die der Server schickt
 def recive():
     global recive_var
         
     data = s.recv(1024)
     spieler = data.decode()
-    print(spieler)
 
     if(spieler == "eins"):
         print("Du bist Spieler 1")
-                
+
+    elif(spieler == ("{} du musst leider noch warten, weil da du alleine im Raum bist".format(name))):
+        print(spieler)
+
     elif(spieler == "zwei"):
         print("Du bist Spieler 2")
         recive_var = False
             
     elif(spieler == "Huhu, ein zweiter Spieler ist da :)"):
+        print("Huhu, ein zweiter Spieler ist da :)")
         recive_var = True
 
-    
 while(1):
     recive()
     if(recive_var == True):
@@ -367,28 +406,13 @@ else:
 
             rot = s.recv(1024)
 
-            print(rot)
-
             zahlen = pickle.loads(rot)
             
             sleep(1)
 
             data = s.recv(1024)
-            
-            data = data.decode()
 
-            data_rec1 = int(data)
-
-            sleep(1)
-
-            data = s.recv(1024)
-            
-            data = data.decode()
-
-            data_rec2 = int(data)
-                    
-            print(data_rec1)
-            print(data_rec2)
+            data_rec = pickle.loads(data) 
 
             break
 
@@ -396,6 +420,9 @@ else:
     tk_window.title("Shmong-Shmong")
     app = MyApp(tk_window)
     app.mainloop()
+
+
+
 
 
 
